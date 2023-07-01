@@ -4,6 +4,7 @@
 
 # my compiled output
 .env
+/postgres
 
 # Logs
 logs

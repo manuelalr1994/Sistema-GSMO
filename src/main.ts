@@ -25,17 +25,13 @@ async function bootstrap() {
     new ValidationPipe({
       whitelist: true,
       forbidNonWhitelisted: true,
-      transform: true,
-      transformOptions: {
-        enableImplicitConversion: true,
-      }
     })
   );
 
   // Agrega Swagger
   const config = new DocumentBuilder()
-    .setTitle('Agroeasy Rest-Api')
-    .setDescription('Agroeasy Endpoints')
+    .setTitle('Sistema GSMO Rest-Api')
+    .setDescription('Sistema GSMO Endpoints')
     .setVersion('1.0')
     .build();
 

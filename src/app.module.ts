@@ -2,10 +2,13 @@ import { Module } from '@nestjs/common';
 import { FreightModule } from './apps/freight/freight.module';
 import { ConfigModule } from '@nestjs/config';
 import { PayrollModule } from './apps/payroll/payroll.module';
-import { AuthGroup } from './auth/auth.module';
+import { AuthModule } from './auth/auth.module';
 
 import { RouterModule } from '@nestjs/core';
 import { routes } from './app.routes';
+import { TypeOrmModule } from '@nestjs/typeorm';
+import { getTypeOrmConfig } from '../config/typeorm.config';
+import { MailsModule } from './mails/mails.module';
 
 @Module({
   imports: [
@@ -13,13 +16,14 @@ import { routes } from './app.routes';
       envFilePath: '.env',
       isGlobal: true,
     }),
+    TypeOrmModule.forRoot(getTypeOrmConfig()),
 
     RouterModule.register(routes),
-    AuthGroup,
+    AuthModule,
+    MailsModule,
     FreightModule,
     PayrollModule
   ],
-  controllers: [],
   providers: [],
 })
 export class AppModule {}

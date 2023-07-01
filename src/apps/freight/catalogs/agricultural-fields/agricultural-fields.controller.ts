@@ -2,7 +2,9 @@ import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/commo
 import { AgriculturalFieldsService } from './agricultural-fields.service';
 import { CreateAgriculturalFieldDto } from './dto/create-agricultural-field.dto';
 import { UpdateAgriculturalFieldDto } from './dto/update-agricultural-field.dto';
+import { ApiTags } from '@nestjs/swagger';
 
+@ApiTags('Campos Agrícolas (freight)')
 @Controller()
 export class AgriculturalFieldsController {
   constructor(private readonly agriculturalFieldsService: AgriculturalFieldsService) {}

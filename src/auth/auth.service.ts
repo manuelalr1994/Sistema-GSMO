@@ -1,11 +1,13 @@
 import { BadRequestException, HttpException, HttpStatus, Injectable, InternalServerErrorException } from '@nestjs/common';
 import { LoginUserDto } from './dto/login-user.dto';
-import { UserDto } from './dto/user.dto';
+import { UserCreateDto } from './dto/user-create.dto';
 import { UpdatePasswordDto } from './dto/update-password.dto';
 import { InjectRepository } from '@nestjs/typeorm';
 import { User } from './entities/user.entity';
 import { Repository } from 'typeorm';
 import * as bcrypt from 'bcrypt';
+import { JwtService } from '@nestjs/jwt';
+import { JwtPayload } from './interfaces/jwt-payload.interface';
 
 @Injectable()
 export class AuthService {
@@ -13,9 +15,17 @@ export class AuthService {
   constructor(
     @InjectRepository(User)
     private readonly repository: Repository<User>,
+    private readonly jwtService: JwtService,
   ) {}
 
-  async create(createUserDto: UserDto) {
+  // This method is used to generate a token
+  private getJwtToken(payload: JwtPayload) {
+    const token = this.jwtService.sign(payload, {secret: process.env.JWT_SECRET});
+    return token;
+  } 
+
+  // create method
+  async create(createUserDto: UserCreateDto) {
     try {
 
       const { password, ...userData } = createUserDto;
@@ -25,15 +35,18 @@ export class AuthService {
         password: bcrypt.hashSync(password, 10)
       });
       await this.repository.save(data);
+      
+      const token = this.getJwtToken({ email: data.email });
       delete data.password;
 
-      return data;
+      return { ...data, token };
 
     } catch (error) {
       this.handleDBErrors(error);
     }
   }
 
+  // login method
   async login(loginUserDto: LoginUserDto) {
 
     const { password, email } = loginUserDto;
@@ -46,22 +59,32 @@ export class AuthService {
     if ( !data || !bcrypt.compareSync(password, data.password) ) 
       throw new HttpException('Correo o contraseña incorrectos', HttpStatus.BAD_REQUEST);
 
-    delete data.password;
-    return data;
+      const token = this.getJwtToken({ email });
+
+      delete data.password;
+  
+      return {
+        ...data,
+        token
+      };
   }
 
+  // findAll method
   findAll() {
     return `This action returns all auth`;
   }
 
+  // findOne method
   findOne(id: number) {
     return `This action returns a #${id} auth`;
   }
 
+  // update method
   update(id: number, updateAuthDto: UpdatePasswordDto) {
     return `This action updates a #${id} auth`;
   }
 
+  // remove method
   remove(id: number) {
     return `This action removes a #${id} auth`;
   }

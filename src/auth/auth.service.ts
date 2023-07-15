@@ -6,100 +6,109 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { User } from './entities/user.entity';
 import { Repository } from 'typeorm';
 import * as bcrypt from 'bcrypt';
-import { JwtService } from '@nestjs/jwt';
-import { JwtPayload } from './interfaces/jwt-payload.interface';
+import { JwtPayload } from 'src/common/modules/token/interfaces/jwt.interface';
+import { UserUpdateDto } from './dto/user-update.dto';
+import { CrudOptions } from 'src/common/modules/CRUD/interfaces/crud-options.interface';
+import { CRUDService } from 'src/common/modules/CRUD/CRUD.service';
+import { MailService } from 'src/common/modules/mail/mail.service';
+import { TokenService } from 'src/common/modules/token/token.service';
 
 @Injectable()
 export class AuthService {
 
+  private readonly createDto: UserCreateDto
+  private readonly updateDto: UserUpdateDto
+  private readonly LoginDto: LoginUserDto
+  private readonly options: CrudOptions= {
+    title: "Usuarios",
+    exclude: ["password"],
+    defaultSelect: {
+      id: true,
+      code: true,
+      name: true,
+      lastName: true,
+      email: true,
+      isActive: true,
+      role: true
+    }
+  }
+
   constructor(
     @InjectRepository(User)
     private readonly repository: Repository<User>,
-    private readonly jwtService: JwtService,
-  ) {}
-
-  // This method is used to generate a token
-  private getJwtToken(payload: JwtPayload) {
-    const token = this.jwtService.sign(payload, {secret: process.env.JWT_SECRET});
-    return token;
-  } 
+    private readonly crudService: CRUDService,
+    private readonly mailService: MailService,
+    private readonly tokenService: TokenService
+  ) {
+    this.crudService.setOptions(repository, this.options);
+  }
 
   // create method
   async create(createUserDto: UserCreateDto) {
-    try {
 
-      const { password, ...userData } = createUserDto;
+    let { password } = createUserDto;
 
-      const data = this.repository.create({
-        ...userData,
-        password: bcrypt.hashSync(password, 10)
-      });
-      await this.repository.save(data);
-      
-      const token = this.getJwtToken({ email: data.email });
-      delete data.password;
+    const data = {
+      ...createUserDto,
+      password: bcrypt.hashSync(password, 10)
+    }
 
-      return { ...data, token };
+    const newUser = await this.crudService.create(data);
 
-    } catch (error) {
-      this.handleDBErrors(error);
+    const { token } = await this.login({ email: newUser.email, password });
+
+    return {
+      ...newUser,
+      token
     }
   }
 
   // login method
-  async login(loginUserDto: LoginUserDto) {
+  async login(loginUserDto: typeof this.LoginDto) {
 
     const { password, email } = loginUserDto;
 
-    let data = await this.repository.findOne({
-      where: { email },
-      select: { email: true, password: true, id: true }
+    let fullUser = await this.repository.findOne({
+      where: { email }
     });
 
-    if ( !data || !bcrypt.compareSync(password, data.password) ) 
+    if (!fullUser || !bcrypt.compareSync(password, fullUser.password))
       throw new HttpException('Correo o contraseña incorrectos', HttpStatus.BAD_REQUEST);
 
-      const token = this.getJwtToken({ email });
+    const role = fullUser.role;
+    const token = await this.tokenService.sign({ email, role });
 
-      delete data.password;
-  
-      return {
-        ...data,
-        token
-      };
+    const { password: UserPassword, ...user } = fullUser;
+
+    return {
+      ...user,
+      token
+    };
   }
 
   // findAll method
-  findAll() {
-    return `This action returns all auth`;
+  async findAll(paginationDto) {
+    return await this.crudService.find(paginationDto);
   }
 
   // findOne method
-  findOne(id: number) {
-    return `This action returns a #${id} auth`;
+  async findOne(id: number) {
+    return await this.crudService.findOne(id)
   }
 
   // update method
-  update(id: number, updateAuthDto: UpdatePasswordDto) {
-    return `This action updates a #${id} auth`;
-  }
+  async update(id: number, updateUserDto: typeof this.updateDto) {
+    let userFound = await this.repository.findOne({ where: {id} });
 
-  // remove method
-  remove(id: number) {
-    return `This action removes a #${id} auth`;
-  }
+    const { password, ...userDto } = updateUserDto;
 
-  // This method is used to handle errors from the database
+    const updatedUser = {
+      ...userFound,
+      ...userDto
+    };
 
-  private handleDBErrors( error: any ): never {
+    const updateResult = await this.crudService.update(userFound.id, updatedUser);
 
-
-    if ( error.code === '23505' ) 
-      throw new BadRequestException( error.detail );
-
-    console.log(error)
-
-    throw new InternalServerErrorException('Please check server logs');
-
+    return updateResult;
   }
 }

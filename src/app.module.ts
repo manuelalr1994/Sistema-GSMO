@@ -8,7 +8,7 @@ import { RouterModule } from '@nestjs/core';
 import { routes } from './app.routes';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { getTypeOrmConfig } from '../config/typeorm.config';
-import { MailsModule } from './mails/mails.module';
+import { MailModule } from './common/modules/mail/mail.module';
 
 @Module({
   imports: [
@@ -20,7 +20,7 @@ import { MailsModule } from './mails/mails.module';
 
     RouterModule.register(routes),
     AuthModule,
-    MailsModule,
+    MailModule,
     FreightModule,
     PayrollModule
   ],

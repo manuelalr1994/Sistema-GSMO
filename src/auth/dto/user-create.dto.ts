@@ -1,14 +1,14 @@
 import { ApiProperty } from "@nestjs/swagger";
-import { IsString, IsEmail, Matches, Length } from "class-validator";
+import { IsString, IsEmail, Matches, Length, IsOptional, IsInt } from "class-validator";
 
 
 export class UserCreateDto {
 
     @ApiProperty({ example: '001', description: 'Codigo de usuario', minLength: 3, maxLength: 3 })
-    @IsString({ message: 'codUser debe ser de tipo: string' })
-    @Length(3, 3, { message: 'codUser debe tener una longitud de 3 caracteres' })
-    @Matches(/^[0-9]+$/, { message: 'codUser debe contener solo numeros' })
-    codUser: string;
+    @IsString({ message: 'code debe ser de tipo: string' })
+    @Length(3, 3, { message: 'code debe tener una longitud de 3 caracteres' })
+    @Matches(/^[0-9]+$/, { message: 'code debe contener solo numeros' })
+    code: string;
 
     @ApiProperty({ example: 'Jorge', description: 'Nombre', minLength: 1, maxLength: 40 })
     @IsString({ message: 'name debe ser de tipo: string' })
@@ -35,5 +35,10 @@ export class UserCreateDto {
         message: 'password debe tener una letra mayúscula, minúscula y un número'
     })
     password: string;
+
+    @ApiProperty({ example: 1, description: 'Id de Rol' })
+    @IsOptional()
+    @IsInt({ message: 'role debe ser de tipo: numeric string' })
+    role?: number;
 
 }

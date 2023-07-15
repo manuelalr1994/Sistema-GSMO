@@ -1,8 +1,11 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, Query, ParseIntPipe } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { UserCreateDto, LoginUserDto, UpdatePasswordDto } from './dto';
 import { ApiTags } from '@nestjs/swagger';
-import { AuthGuard } from '@nestjs/passport';
+import { ROLES } from 'src/common/constants/roles.const';
+import { Roles } from 'src/common/decorators/roles.decorator';
+import { ApiPagination } from 'src/common/modules/CRUD/decorators/page.decorator';
+import { UserUpdateDto } from './dto/user-update.dto';
 
 @ApiTags('Usuarios')
 @Controller()
@@ -12,7 +15,7 @@ export class AuthController {
     ) {}
 
   @Get('private')
-  @UseGuards( AuthGuard() )
+  @Roles(ROLES.ADMIN, ROLES.SUPER_USER)
   privateRoute() {
     return { 
       ok: true,
@@ -31,22 +34,21 @@ export class AuthController {
   }
 
   @Get()
-  findAll() {
-    return this.authService.findAll();
+  @ApiPagination()
+  @Roles(ROLES.ADMIN, ROLES.SUPER_USER)
+  findAll(@Query() paginationDto) {
+    return this.authService.findAll(paginationDto);
   }
 
   @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.authService.findOne(+id);
+  @Roles(ROLES.ADMIN, ROLES.SUPER_USER)
+  findOne(@Param('id', ParseIntPipe) id: number) {
+    return this.authService.findOne(id);
   }
 
   @Patch(':id')
-  update(@Param('id') id: string, @Body() updateAuthDto: UpdatePasswordDto) {
-    return this.authService.update(+id, updateAuthDto);
-  }
-
-  @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.authService.remove(+id);
+  @Roles(ROLES.ADMIN, ROLES.SUPER_USER)
+  update(@Param('id', ParseIntPipe) id: number, @Body() updateUserDto: UserUpdateDto) {
+    return this.authService.update(id, updateUserDto);
   }
 }

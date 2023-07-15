@@ -8,7 +8,7 @@ export class User {
     id: number;
 
     @Column({ type: 'varchar', default: '001', length: 3, nullable: false })
-    codUser: string;
+    code: string;
 
     @Column({ type: 'varchar', length: 30, nullable: false })
     name: string;
@@ -22,7 +22,7 @@ export class User {
     @Column({ type: 'varchar', length: 60, nullable: false })
     password: string;
 
-    @Column('text', { array: true, default: ['user'] })
+    @Column({ default: 'ADMIN' })
     role: string;
 
     @Column({ default: true })
